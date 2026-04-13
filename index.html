@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Одеська тарілка: Баланс та Вільний вибір</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+        .plate-container { perspective: 1000px; }
+        .plate {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: #1c1917;
+            border: 12px solid #292524;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.7), inset 0 0 50px rgba(0,0,0,0.9);
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        @media (min-width: 640px) { .plate { width: 480px; height: 480px; } }
+        
+        /* Зонування тарілки 50/25/25 */
+        .sector {
+            position: absolute;
+            transform-origin: 100% 100%;
+            opacity: 0.15;
+            transition: opacity 1s ease;
+        }
+        .sector.active { opacity: 1; }
+        
+        .sector-veggies {
+            width: 50%; height: 100%;
+            left: 0; top: 0;
+            background: rgba(16, 185, 129, 0.15);
+            border-right: 3px dashed rgba(16, 185, 129, 0.4);
+        }
+        .sector-carbs {
+            width: 50%; height: 50%;
+            right: 0; top: 0;
+            background: rgba(234, 179, 8, 0.15);
+            border-bottom: 3px dashed rgba(234, 179, 8, 0.4);
+        }
+        .sector-proteins {
+            width: 50%; height: 50%;
+            right: 0; bottom: 0;
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .food-item {
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: absolute;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6));
+            z-index: 50;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+        .food-item:hover { transform: scale(calc(var(--s) + 0.1)) rotate(5deg) !important; }
+        .food-item.base-item { filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8)) brightness(0.8); z-index: 40; pointer-events: none; }
+        
+        @keyframes popIn {
+            from { transform: scale(0) translateY(-50px) rotate(-45deg); opacity: 0; }
+            to { transform: scale(var(--s)) translateY(0) rotate(0); opacity: 1; }
+        }
+
+        /* Стилізація фіскального чеку */
+        .thermal-receipt {
+            font-family: 'Space Mono', monospace;
+            background: #f8f8f8;
+            color: #1a1a1a;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.1);
+            position: relative;
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+            background-size: 100% 3px;
+        }
+        .thermal-receipt::before {
+            content: ''; position: absolute; top: -10px; left: 0; right: 0; height: 10px;
+            background: linear-gradient(-45deg, transparent 5px, #f8f8f8 5px), linear-gradient(45deg, transparent 5px, #f8f8f8 5px);
+            background-size: 10px 10px;
+        }
+        .thermal-receipt::after {
+            content: ''; position: absolute; bottom: -10px; left: 0; right: 0; height: 10px;
+            background: linear-gradient(-45deg, #f8f8f8 5px, transparent 5px), linear-gradient(45deg, #f8f8f8 5px, transparent 5px);
+            background-size: 10px 10px;
+        }
+
+        .bar-transition { transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .bar-glow { box-shadow: 0 0 15px var(--tw-shadow-color); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+        
+        /* Анімації для логіки міні-гри */
+        #step1-overlay { transition: opacity 0.5s, transform 0.5s; }
+        .hidden-step { opacity: 0; pointer-events: none; transform: scale(0.95); position: absolute; width: 100%; }
+        .active-step { opacity: 1; pointer-events: auto; transform: scale(1); position: relative; }
+    </style>
+</head>
+<body class="bg-stone-950 text-stone-200 min-h-screen font-sans selection:bg-emerald-500/30">
+
+    <header class="p-4 sm:p-6 border-b border-stone-800 bg-stone-900/90 backdrop-blur-xl sticky top-0 z-[100]">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-emerald-500 rounded-2xl rotate-3 flex items-center justify-center font-black text-stone-950 text-2xl shadow-lg shadow-emerald-500/30">O</div>
+                <div>
+                    <h1 class="font-black text-2xl tracking-tighter text-white uppercase">Одеська Тарілка <span class="text-emerald-500">2.0</span></h1>
+                    <p class="text-[10px] text-stone-400 font-bold tracking-[0.3em] uppercase">Правило 80/20 в дії</p>
+                </div>
+            </div>
+            <div class="flex bg-stone-800 p-1 rounded-xl border border-stone-700">
+                <button onclick="setProfile('male')" id="btn-male" class="px-6 py-2 rounded-lg text-xs font-black transition-all">ЮНАК (3150)</button>
+                <button onclick="setProfile('female')" id="btn-female" class="px-6 py-2 rounded-lg text-xs font-black transition-all">ДІВЧИНА (2750)</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        
+        <!-- ЛІВА КОЛОНКА: МЕНЮ / ІНТЕРАКТИВНИЙ ВСТУП -->
+        <div class="lg:col-span-3 h-auto lg:h-[calc(100vh-180px)] relative order-2 lg:order-1">
+            
+            <!-- Стан 0: Крок 1 (Завантаження бази) -->
+            <div id="step1-container" class="active-step bg-stone-900 p-6 sm:p-8 rounded-[2rem] border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/10 text-center flex flex-col justify-center h-full min-h-[400px]">
+                <div class="text-6xl mb-6 animate-bounce">🔋</div>
+                <h2 class="text-2xl font-black text-white mb-4 uppercase tracking-tight">Крок 1:<br><span class="text-emerald-400">Фундамент</span></h2>
+                <p class="text-sm text-stone-400 mb-8 leading-relaxed">
+                    Перш ніж обирати смаколики, забезпечимо організм необхідною базою. Це сніданок, обід та вечеря (1800 ккал), які дадуть 80% необхідних нутрієнтів.
+                </p>
+                <button onclick="loadFoundation()" class="w-full py-5 bg-emerald-500 text-stone-950 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-emerald-400 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                    З'їсти базу
+                </button>
+            </div>
+
+            <!-- Стан 1: Крок 2 (Вільний вибір 20%) -->
+            <div id="step2-container" class="hidden-step flex flex-col h-full">
+                <div class="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl mb-6">
+                    <h3 class="text-emerald-400 font-black text-sm uppercase tracking-widest mb-1">Крок 2: Вільний вибір (20%)</h3>
+                    <p class="text-[11px] text-stone-400 leading-tight italic">Базу закладено! Тепер у вас залишилося місце для додаткових страв. Балансуйте з розумом.</p>
+                </div>
+
+                <div class="overflow-y-auto custom-scrollbar pr-3 space-y-6 flex-grow pb-10">
+                    
+                    <!-- Блок: Корисні доповнення (Дані користувача) -->
+                    <section>
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-3 flex items-center gap-2">
+                            <span class="w-full h-[1px] bg-blue-500/30"></span> ПЕРШІ СТРАВИ <span class="w-4 h-[1px] bg-blue-500/30"></span>
+                        </h4>
+                        <div id="soup-list" class="grid gap-2"></div>
+                    </section>
+
+                    <section>
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-3 flex items-center gap-2">
+                            <span class="w-full h-[1px] bg-emerald-500/30"></span> САЛАТИ <span class="w-4 h-[1px] bg-emerald-500/30"></span>
+                        </h4>
+                        <div id="salad-list" class="grid gap-2"></div>
+                    </section>
+
+                    <!-- Блок: Смаколики -->
+                    <section>
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-3 mt-6 flex items-center gap-2">
+                            <span class="w-full h-[1px] bg-amber-500/30"></span> СМАКОЛИКИ <span class="w-4 h-[1px] bg-amber-500/30"></span>
+                        </h4>
+                        <div id="treat-list" class="grid gap-2"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЦЕНТРАЛЬНА КОЛОНКА: ТАРІЛКА ТА ДАШБОРД -->
+        <div class="lg:col-span-6 flex flex-col items-center order-1 lg:order-2 pt-4">
+            
+            <div class="plate-container mb-12">
+                <div id="main-plate" class="plate">
+                    <div id="sector-v" class="sector sector-veggies"></div>
+                    <div id="sector-c" class="sector sector-carbs"></div>
+                    <div id="sector-p" class="sector sector-proteins"></div>
+                    
+                    <div id="plate-items" class="absolute inset-0 z-50 pointer-events-none"></div>
+                </div>
+            </div>
+
+            <!-- Реалістичний прогрес (БЖВ) -->
+            <div class="w-full max-w-lg bg-stone-900/80 backdrop-blur-xl p-6 rounded-[2rem] border border-stone-800 shadow-2xl">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <span class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Енергія за день</span>
+                        <h3 id="kcal-display" class="text-4xl font-black text-white tabular-nums">0 <span class="text-stone-600 text-lg uppercase font-bold">kcal</span></h3>
+                    </div>
+                    <div id="status-tag" class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter border border-stone-700 bg-stone-950 text-stone-500">
+                        Очікування бази
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                            <span class="text-blue-400">Білки (Будівництво)</span>
+                            <span id="p-label" class="text-stone-400">0%</span>
+                        </div>
+                        <div class="h-2 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
+                            <div id="p-bar" class="h-full bg-blue-500 bar-transition shadow-blue-500/50 bar-glow" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                            <span class="text-emerald-400">Жири (Мозок)</span>
+                            <span id="f-label" class="text-stone-400">0%</span>
+                        </div>
+                        <div class="h-2 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
+                            <div id="f-bar" class="h-full bg-emerald-500 bar-transition shadow-emerald-500/50 bar-glow" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                            <span class="text-amber-400">Вуглеводи (Паливо)</span>
+                            <span id="c-label" class="text-stone-400">0%</span>
+                        </div>
+                        <div class="h-2 bg-stone-950 rounded-full overflow-hidden border border-stone-800">
+                            <div id="c-bar" class="h-full bg-amber-500 bar-transition shadow-amber-500/50 bar-glow" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРАВА КОЛОНКА: ОДЕСЬКИЙ ЧЕК -->
+        <div class="lg:col-span-3 order-3">
+            <div class="thermal-receipt p-6 sm:p-8 min-h-[550px] flex flex-col text-[#111]">
+                <div class="text-center border-b-2 border-dashed border-stone-400 pb-5 mb-5">
+                    <h2 class="font-black text-2xl italic uppercase tracking-tighter">Odesa Market</h2>
+                    <p class="text-[10px] opacity-70 mt-1 uppercase font-bold">Здоров'я • Баланс • Смак</p>
+                    <p id="receipt-date" class="text-[9px] mt-2 opacity-50 font-bold"></p>
+                </div>
+
+                <div class="flex-grow flex flex-col">
+                    
+                    <!-- Блок 1: База -->
+                    <div id="receipt-base-block" class="opacity-30 transition-opacity duration-500 mb-4">
+                        <h4 class="text-[10px] font-black uppercase mb-2 border-b border-[#ccc] pb-1">=== ФУНДАМЕНТ (80%) ===</h4>
+                        <div class="space-y-1 text-[11px] font-bold" id="receipt-base-items">
+                            <div class="italic text-center py-2">Ще не завантажено...</div>
+                        </div>
+                    </div>
+
+                    <!-- Блок 2: Вільний вибір -->
+                    <div id="receipt-choice-block" class="transition-opacity duration-500">
+                        <h4 class="text-[10px] font-black uppercase mb-2 border-b border-[#ccc] pb-1">=== ВІЛЬНИЙ ВИБІР (20%) ===</h4>
+                        <div class="space-y-1.5 text-[12px] font-bold" id="receipt-choice-items">
+                            <div class="italic text-center py-2 opacity-50 text-[10px]">Чекаємо на ваш вибір...</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="border-t-2 border-[#111] pt-3 mt-6 space-y-1">
+                    <div class="flex justify-between font-black text-xl">
+                        <span>РАЗОМ:</span>
+                        <span id="total-kcal-receipt">0</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] opacity-60 font-bold">
+                        <span>ЛІМІТ НА ДЕНЬ:</span>
+                        <span id="limit-label">3150</span>
+                    </div>
+                </div>
+
+                <div id="ai-verdict" class="mt-6 pt-5 border-t border-dashed border-stone-400">
+                    <p class="text-[10px] font-black uppercase mb-2 opacity-50">Аналіз раціону:</p>
+                    <p id="verdict-text" class="text-[12px] leading-snug italic font-bold">Чекаємо на завантаження бази.</p>
+                </div>
+
+                <div class="mt-8 text-center opacity-70">
+                    <div class="flex justify-center mb-2" id="barcode">
+                        <div class="flex gap-[2px] h-8 overflow-hidden">
+                            <div class="w-1 bg-[#111]"></div><div class="w-[2px] bg-[#111]"></div><div class="w-1 bg-[#111]"></div><div class="w-[3px] bg-[#111]"></div><div class="w-[1px] bg-[#111]"></div><div class="w-2 bg-[#111]"></div><div class="w-1 bg-[#111]"></div><div class="w-[4px] bg-[#111]"></div><div class="w-[2px] bg-[#111]"></div><div class="w-1 bg-[#111]"></div>
+                        </div>
+                    </div>
+                    <p class="text-[8px] font-bold uppercase tracking-widest">Rule 80/20 Applied</p>
+                </div>
+                
+                <button onclick="resetAll()" class="mt-6 w-full py-3 bg-[#111] text-[#f8f8f8] text-[10px] font-black uppercase hover:opacity-80 transition-all rounded-sm tracking-widest">Почати новий день</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ДАНІ ВІД КОРИСТУВАЧА + СМАКОЛИКИ
+        const MENU = {
+            soups: [
+                { id: 'p1', name: 'Борщ український', w: 250, kcal: 200, p: 8, f: 10, c: 18, icon: '🍲', cat: 'soup' },
+                { id: 'p2', name: 'Суп курячий', w: 250, kcal: 90, p: 12, f: 3, c: 5, icon: '🍜', cat: 'soup' },
+                { id: 'p3', name: 'Суп овочевий', w: 250, kcal: 70, p: 2, f: 1.5, c: 12, icon: '🥣', cat: 'soup' },
+                { id: 'p4', name: 'Розсольник', w: 250, kcal: 110, p: 4, f: 5, c: 14, icon: '🥣', cat: 'soup' },
+                { id: 'p5', name: 'Суп з фрикадельками', w: 250, kcal: 150, p: 10, f: 8, c: 10, icon: '🥘', cat: 'soup' }
+            ],
+            salads: [
+                { id: 's1', name: 'Салат з буряку', w: 100, kcal: 105, p: 1.5, f: 8, c: 10, icon: '🥗', cat: 'salad' },
+                { id: 's2', name: 'Салат з капусти', w: 100, kcal: 45, p: 1.2, f: 2, c: 5, icon: '🥬', cat: 'salad' },
+                { id: 's3', name: 'Салат «Олів’є»', w: 100, kcal: 198, p: 6, f: 15, c: 12, icon: '🥣', cat: 'salad' },
+                { id: 's4', name: 'З огірків і помідорів', w: 100, kcal: 60, p: 0.8, f: 4, c: 4, icon: '🥗', cat: 'salad' },
+                { id: 's5', name: 'Морквяний з яблуком', w: 100, kcal: 75, p: 0.7, f: 0.2, c: 18, icon: '🍎', cat: 'salad' }
+            ],
+            treats: [
+                { id: 't1', name: 'Шоколадний батончик', w: 50, kcal: 250, p: 3, f: 12, c: 32, icon: '🍫', cat: 'treat' },
+                { id: 't2', name: 'Картопля фрі', w: 150, kcal: 450, p: 5, f: 22, c: 55, icon: '🍟', cat: 'treat' },
+                { id: 't3', name: 'Газована вода (цукор)', w: 500, kcal: 210, p: 0, f: 0, c: 53, icon: '🥤', cat: 'treat' },
+                { id: 't4', name: 'Тістечко / Еклер', w: 100, kcal: 350, p: 5, f: 20, c: 40, icon: '🍰', cat: 'treat' },
+                { id: 't5', name: 'Чізбургер', w: 150, kcal: 320, p: 15, f: 14, c: 30, icon: '🍔', cat: 'treat' }
+            ]
+        };
+
+        // БАЗОВИЙ ФУНДАМЕНТ (те, що з'їдається на Кроці 1)
+        const FOUNDATION = {
+            kcal: 1800, p: 75, f: 55, c: 240,
+            items: [
+                { name: 'Сніданок: Вівсянка + Яйця', kcal: 450, icon: '🍳' },
+                { name: 'Обід: М\'ясо + Гарнір', kcal: 650, icon: '🥩' },
+                { name: 'Вечеря: Риба', kcal: 400, icon: '🐟' },
+                { name: 'Клітковина (Овочі/Фрукти)', kcal: 300, icon: '🥦' }
+            ]
+        };
+
+        let state = {
+            phase: 0, // 0: Start, 1: Base Loaded
+            profile: 'male',
+            limit: 3150,
+            totalKcal: 0,
+            p: 0, f: 0, c: 0,
+            choices: []
+        };
+
+        function init() {
+            document.getElementById('receipt-date').innerText = new Date().toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' });
+            
+            // Рендер меню (але воно поки сховане)
+            const renderMenu = (list, containerId) => {
+                const container = document.getElementById(containerId);
+                list.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.onclick = () => addChoice(item);
+                    btn.className = "group text-left p-3 rounded-xl bg-stone-900 border border-stone-800 hover:bg-stone-800 hover:border-stone-600 transition-all flex justify-between items-center relative overflow-hidden active:scale-95";
+                    btn.innerHTML = `
+                        <div class="z-10 flex flex-col">
+                            <span class="text-[13px] font-bold text-stone-300 group-hover:text-white transition-colors">${item.name}</span>
+                            <span class="text-[9px] text-stone-500 font-black uppercase tracking-widest">${item.w}г</span>
+                        </div>
+                        <div class="z-10 flex items-center gap-3">
+                            <span class="text-xs font-black text-stone-400 tabular-nums">${item.kcal} kcal</span>
+                            <span class="text-2xl">${item.icon}</span>
+                        </div>
+                    `;
+                    container.appendChild(btn);
+                });
+            };
+
+            renderMenu(MENU.soups, 'soup-list');
+            renderMenu(MENU.salads, 'salad-list');
+            renderMenu(MENU.treats, 'treat-list');
+            
+            setProfile('male');
+            updateUI();
+        }
+
+        function setProfile(type) {
+            state.profile = type;
+            state.limit = type === 'male' ? 3150 : 2750;
+            
+            const m = document.getElementById('btn-male');
+            const f = document.getElementById('btn-female');
+            
+            [m, f].forEach(b => {
+                b.className = "px-6 py-2 rounded-lg text-xs font-black transition-all " + 
+                    (b.id === 'btn-' + type ? "bg-white text-stone-900 shadow-lg" : "text-stone-500 hover:text-stone-300 border border-stone-700");
+            });
+
+            document.getElementById('limit-label').innerText = state.limit;
+            updateUI();
+        }
+
+        // КРОК 1: Завантаження Фундаменту
+        function loadFoundation() {
+            state.phase = 1;
+            state.totalKcal = FOUNDATION.kcal;
+            state.p = FOUNDATION.p;
+            state.f = FOUNDATION.f;
+            state.c = FOUNDATION.c;
+
+            // Візуальна зміна інтерфейсу (ховаємо Крок 1, показуємо Крок 2)
+            document.getElementById('step1-container').className = "hidden-step";
+            setTimeout(() => {
+                document.getElementById('step2-container').className = "active-step flex flex-col h-full";
+            }, 500);
+
+            // Анімація тарілки (підсвічуємо сектори)
+            document.getElementById('sector-v').classList.add('active');
+            document.getElementById('sector-c').classList.add('active');
+            document.getElementById('sector-p').classList.add('active');
+
+            // Кидаємо базові іконки на тарілку
+            FOUNDATION.items.forEach((item, i) => {
+                setTimeout(() => {
+                    const cont = document.getElementById('plate-items');
+                    const el = document.createElement('div');
+                    el.className = 'food-item base-item text-6xl md:text-8xl';
+                    el.innerText = item.icon;
+                    el.style.setProperty('--s', '1');
+                    
+                    // Розподіл: Овочі зліва, вуглеводи/білки справа
+                    let rx, ry;
+                    if(i === 3) { rx = 25; ry = 50; } // Овочі
+                    else if(i === 0) { rx = 65; ry = 30; } // Сніданок (вуглеводи)
+                    else { rx = 65; ry = 70; } // М'ясо/Риба
+                    
+                    // Додаємо трохи рандому
+                    rx += (Math.random() * 10 - 5);
+                    ry += (Math.random() * 10 - 5);
+                    
+                    el.style.left = `${rx}%`;
+                    el.style.top = `${ry}%`;
+                    cont.appendChild(el);
+                }, i * 150);
+            });
+
+            updateUI();
+        }
+
+        // КРОК 2: Додавання вільного вибору
+        function addChoice(item) {
+            if(state.phase === 0) return; // Захист
+
+            state.choices.push({...item, uid: Math.random()});
+            state.totalKcal += item.kcal;
+            state.p += item.p;
+            state.f += item.f;
+            state.c += item.c;
+            
+            // Кидаємо на тарілку
+            const cont = document.getElementById('plate-items');
+            const el = document.createElement('div');
+            el.className = 'food-item text-5xl md:text-7xl cursor-pointer';
+            el.innerText = item.icon;
+            el.title = "Клікніть, щоб прибрати";
+            
+            // Масштабування залежно від калорій (0.9 - 1.5)
+            const scale = 0.9 + (item.kcal / 600);
+            el.style.setProperty('--s', scale);
+            
+            // Рандомне розташування ближче до центру
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 30; 
+            el.style.left = `${50 + Math.cos(angle) * radius}%`;
+            el.style.top = `${50 + Math.sin(angle) * radius}%`;
+            
+            // Видалення по кліку
+            el.onclick = function() {
+                state.totalKcal -= item.kcal;
+                state.p -= item.p; state.f -= item.f; state.c -= item.c;
+                state.choices = state.choices.filter(c => c.uid !== item.uid);
+                this.remove();
+                updateUI();
+            };
+
+            cont.appendChild(el);
+            updateUI();
+        }
+
+        function updateUI() {
+            if(state.phase === 0) return; // Нічого не оновлюємо до старту
+
+            // Калорії
+            document.getElementById('kcal-display').innerHTML = `${state.totalKcal} <span class="text-stone-500 text-lg uppercase font-bold">kcal</span>`;
+            document.getElementById('total-kcal-receipt').innerText = state.totalKcal;
+
+            // БЖВ Бари (цільові значення для ліміту)
+            const targetP = state.limit * 0.035; 
+            const targetF = state.limit * 0.03;
+            const targetC = state.limit * 0.12;
+
+            const pPct = Math.min((state.p / targetP) * 100, 100);
+            const fPct = Math.min((state.f / targetF) * 100, 100);
+            const cPct = Math.min((state.c / targetC) * 100, 100);
+
+            document.getElementById('p-bar').style.width = pPct + '%';
+            document.getElementById('f-bar').style.width = fPct + '%';
+            document.getElementById('c-bar').style.width = cPct + '%';
+            
+            document.getElementById('p-label').innerText = Math.round(pPct) + '%';
+            document.getElementById('f-label').innerText = Math.round(fPct) + '%';
+            document.getElementById('c-label').innerText = Math.round(cPct) + '%';
+
+            // Оновлення чеку
+            document.getElementById('receipt-base-block').classList.replace('opacity-30', 'opacity-100');
+            
+            let baseHTML = '';
+            FOUNDATION.items.forEach(i => {
+                baseHTML += `<div class="flex justify-between border-b border-[#ddd] py-0.5"><span>${i.name}</span><span class="tabular-nums">${i.kcal}</span></div>`;
+            });
+            document.getElementById('receipt-base-items').innerHTML = baseHTML;
+
+            let choiceHTML = '';
+            if(state.choices.length === 0) {
+                choiceHTML = `<div class="italic text-center py-4 opacity-50 text-[10px]">Ваш вибір порожній. Додайте страву!</div>`;
+            } else {
+                state.choices.forEach(i => {
+                    choiceHTML += `<div class="flex justify-between py-0.5"><span>• ${i.name.toUpperCase()}</span><span class="tabular-nums">${i.kcal}</span></div>`;
+                });
+            }
+            document.getElementById('receipt-choice-items').innerHTML = choiceHTML;
+
+            // Логіка вердиктів та статусів
+            let status = "В нормі";
+            let tagColor = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+            let verdict = "База завантажена. У вас є місце для улюблених страв або десертів. Обирайте з розумом!";
+
+            if (state.totalKcal > state.limit) {
+                status = "Перебір";
+                tagColor = "text-red-400 border-red-500/30 bg-red-500/10";
+                verdict = "Ой-вей! Ліміт перевищено. Зайві калорії з фаст-фуду чи десертів відкладуться про запас. Треба більше рухатись!";
+            } else if (state.choices.length > 0) {
+                // Перевірка на співвідношення корисного до некорисного
+                const treatsKcal = state.choices.filter(c => c.cat === 'treat').reduce((sum, c) => sum + c.kcal, 0);
+                if (treatsKcal > (state.limit * 0.2)) {
+                    status = "Увага: Цукор!";
+                    tagColor = "text-amber-400 border-amber-500/30 bg-amber-500/10";
+                    verdict = "Ви додали забагато смаколиків. Швидкі вуглеводи дадуть різкий стрибок енергії, а потім — втому на уроці.";
+                } else {
+                    status = "Ідеальний баланс";
+                    verdict = "Чудово! Правило 80/20 працює. Ви отримали всі вітаміни з бази і залишили місце для задоволення без шкоди фігурі.";
+                }
+            }
+
+            const statusTag = document.getElementById('status-tag');
+            statusTag.innerText = status;
+            statusTag.className = `px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${tagColor}`;
+            document.getElementById('verdict-text').innerText = verdict;
+        }
+
+        function resetAll() {
+            state.phase = 0;
+            state.totalKcal = 0;
+            state.p = 0; state.f = 0; state.c = 0;
+            state.choices = [];
+            
+            // Повернення UI до початкового стану
+            document.getElementById('step2-container').className = "hidden-step flex flex-col h-full";
+            setTimeout(() => {
+                document.getElementById('step1-container').className = "active-step bg-stone-900 p-6 sm:p-8 rounded-[2rem] border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/10 text-center flex flex-col justify-center h-full min-h-[400px]";
+            }, 500);
+
+            document.getElementById('plate-items').innerHTML = '';
+            document.getElementById('sector-v').classList.remove('active');
+            document.getElementById('sector-c').classList.remove('active');
+            document.getElementById('sector-p').classList.remove('active');
+
+            // Скидання лічильників
+            document.getElementById('kcal-display').innerHTML = `0 <span class="text-stone-600 text-lg uppercase font-bold">kcal</span>`;
+            document.getElementById('total-kcal-receipt').innerText = 0;
+            document.getElementById('p-bar').style.width = '0%';
+            document.getElementById('f-bar').style.width = '0%';
+            document.getElementById('c-bar').style.width = '0%';
+            document.getElementById('p-label').innerText = '0%';
+            document.getElementById('f-label').innerText = '0%';
+            document.getElementById('c-label').innerText = '0%';
+            document.getElementById('status-tag').className = "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter border border-stone-700 bg-stone-950 text-stone-500";
+            document.getElementById('status-tag').innerText = "Очікування бази";
+            
+            document.getElementById('receipt-base-block').classList.replace('opacity-100', 'opacity-30');
+            document.getElementById('receipt-base-items').innerHTML = '<div class="italic text-center py-2">Ще не завантажено...</div>';
+            document.getElementById('receipt-choice-items').innerHTML = '<div class="italic text-center py-2 opacity-50 text-[10px]">Чекаємо на ваш вибір...</div>';
+            document.getElementById('verdict-text').innerText = "Чекаємо на завантаження бази.";
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
