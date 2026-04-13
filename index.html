@@ -186,7 +186,7 @@
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <span class="text-[10px] font-black text-stone-500 uppercase tracking-widest">Енергія за день</span>
-                        <h3 id="kcal-display" class="text-4xl font-black text-white tabular-nums">0 <span class="text-stone-600 text-lg uppercase font-bold">kcal</span></h3>
+                        <h3 id="ккал-display" class="text-4xl font-black text-white tabular-nums">0 <span class="text-stone-600 text-lg uppercase font-bold">ккал</span></h3>
                     </div>
                     <div id="status-tag" class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter border border-stone-700 bg-stone-950 text-stone-500">
                         Очікування бази
@@ -257,7 +257,7 @@
                 <div class="border-t-2 border-[#111] pt-3 mt-6 space-y-1">
                     <div class="flex justify-between font-black text-xl">
                         <span>РАЗОМ:</span>
-                        <span id="total-kcal-receipt">0</span>
+                        <span id="total-ккал-receipt">0</span>
                     </div>
                     <div class="flex justify-between text-[10px] opacity-60 font-bold">
                         <span>ЛІМІТ НА ДЕНЬ:</span>
@@ -288,36 +288,36 @@
         // ДАНІ ВІД КОРИСТУВАЧА + СМАКОЛИКИ
         const MENU = {
             soups: [
-                { id: 'p1', name: 'Борщ український', w: 250, kcal: 200, p: 8, f: 10, c: 18, icon: '🍲', cat: 'soup' },
-                { id: 'p2', name: 'Суп курячий', w: 250, kcal: 90, p: 12, f: 3, c: 5, icon: '🍜', cat: 'soup' },
-                { id: 'p3', name: 'Суп овочевий', w: 250, kcal: 70, p: 2, f: 1.5, c: 12, icon: '🥣', cat: 'soup' },
-                { id: 'p4', name: 'Розсольник', w: 250, kcal: 110, p: 4, f: 5, c: 14, icon: '🥣', cat: 'soup' },
-                { id: 'p5', name: 'Суп з фрикадельками', w: 250, kcal: 150, p: 10, f: 8, c: 10, icon: '🥘', cat: 'soup' }
+                { id: 'p1', name: 'Борщ український', w: 250, ккал: 200, p: 8, f: 10, c: 18, icon: '🍲', cat: 'soup' },
+                { id: 'p2', name: 'Суп курячий', w: 250, ккал: 90, p: 12, f: 3, c: 5, icon: '🍜', cat: 'soup' },
+                { id: 'p3', name: 'Суп овочевий', w: 250, ккал: 70, p: 2, f: 1.5, c: 12, icon: '🥣', cat: 'soup' },
+                { id: 'p4', name: 'Розсольник', w: 250, ккал: 110, p: 4, f: 5, c: 14, icon: '🥣', cat: 'soup' },
+                { id: 'p5', name: 'Суп з фрикадельками', w: 250, ккал: 150, p: 10, f: 8, c: 10, icon: '🥘', cat: 'soup' }
             ],
             salads: [
-                { id: 's1', name: 'Салат з буряку', w: 100, kcal: 105, p: 1.5, f: 8, c: 10, icon: '🥗', cat: 'salad' },
-                { id: 's2', name: 'Салат з капусти', w: 100, kcal: 45, p: 1.2, f: 2, c: 5, icon: '🥬', cat: 'salad' },
-                { id: 's3', name: 'Салат «Олів’є»', w: 100, kcal: 198, p: 6, f: 15, c: 12, icon: '🥣', cat: 'salad' },
-                { id: 's4', name: 'З огірків і помідорів', w: 100, kcal: 60, p: 0.8, f: 4, c: 4, icon: '🥗', cat: 'salad' },
-                { id: 's5', name: 'Морквяний з яблуком', w: 100, kcal: 75, p: 0.7, f: 0.2, c: 18, icon: '🍎', cat: 'salad' }
+                { id: 's1', name: 'Салат з буряку', w: 100, ккал: 105, p: 1.5, f: 8, c: 10, icon: '🥗', cat: 'salad' },
+                { id: 's2', name: 'Салат з капусти', w: 100, ккал: 45, p: 1.2, f: 2, c: 5, icon: '🥬', cat: 'salad' },
+                { id: 's3', name: 'Салат «Олів’є»', w: 100, ккал: 198, p: 6, f: 15, c: 12, icon: '🥣', cat: 'salad' },
+                { id: 's4', name: 'З огірків і помідорів', w: 100, ккал: 60, p: 0.8, f: 4, c: 4, icon: '🥗', cat: 'salad' },
+                { id: 's5', name: 'Морквяний з яблуком', w: 100, ккал: 75, p: 0.7, f: 0.2, c: 18, icon: '🍎', cat: 'salad' }
             ],
             treats: [
-                { id: 't1', name: 'Шоколадний батончик', w: 50, kcal: 250, p: 3, f: 12, c: 32, icon: '🍫', cat: 'treat' },
-                { id: 't2', name: 'Картопля фрі', w: 150, kcal: 450, p: 5, f: 22, c: 55, icon: '🍟', cat: 'treat' },
-                { id: 't3', name: 'Газована вода (цукор)', w: 500, kcal: 210, p: 0, f: 0, c: 53, icon: '🥤', cat: 'treat' },
-                { id: 't4', name: 'Тістечко / Еклер', w: 100, kcal: 350, p: 5, f: 20, c: 40, icon: '🍰', cat: 'treat' },
-                { id: 't5', name: 'Чізбургер', w: 150, kcal: 320, p: 15, f: 14, c: 30, icon: '🍔', cat: 'treat' }
+                { id: 't1', name: 'Шоколадний батончик', w: 50, ккал: 250, p: 3, f: 12, c: 32, icon: '🍫', cat: 'treat' },
+                { id: 't2', name: 'Картопля фрі', w: 150, ккал: 450, p: 5, f: 22, c: 55, icon: '🍟', cat: 'treat' },
+                { id: 't3', name: 'Газована вода (цукор)', w: 500, ккал: 210, p: 0, f: 0, c: 53, icon: '🥤', cat: 'treat' },
+                { id: 't4', name: 'Тістечко / Еклер', w: 100, ккал: 350, p: 5, f: 20, c: 40, icon: '🍰', cat: 'treat' },
+                { id: 't5', name: 'Чізбургер', w: 150, ккал: 320, p: 15, f: 14, c: 30, icon: '🍔', cat: 'treat' }
             ]
         };
 
         // БАЗОВИЙ ФУНДАМЕНТ (те, що з'їдається на Кроці 1)
         const FOUNDATION = {
-            kcal: 1800, p: 75, f: 55, c: 240,
+            ккал: 1800, p: 75, f: 55, c: 240,
             items: [
-                { name: 'Сніданок: Вівсянка + Яйця', kcal: 450, icon: '🍳' },
-                { name: 'Обід: М\'ясо + Гарнір', kcal: 650, icon: '🥩' },
-                { name: 'Вечеря: Риба', kcal: 400, icon: '🐟' },
-                { name: 'Клітковина (Овочі/Фрукти)', kcal: 300, icon: '🥦' }
+                { name: 'Сніданок: Вівсянка + Яйця', ккал: 450, icon: '🍳' },
+                { name: 'Обід: М\'ясо + Гарнір', ккал: 650, icon: '🥩' },
+                { name: 'Вечеря: Риба', ккал: 400, icon: '🐟' },
+                { name: 'Клітковина (Овочі/Фрукти)', ккал: 300, icon: '🥦' }
             ]
         };
 
@@ -325,7 +325,7 @@
             phase: 0, // 0: Start, 1: Base Loaded
             profile: 'male',
             limit: 3150,
-            totalKcal: 0,
+            totalккал: 0,
             p: 0, f: 0, c: 0,
             choices: []
         };
@@ -346,7 +346,7 @@
                             <span class="text-[9px] text-stone-500 font-black uppercase tracking-widest">${item.w}г</span>
                         </div>
                         <div class="z-10 flex items-center gap-3">
-                            <span class="text-xs font-black text-stone-400 tabular-nums">${item.kcal} kcal</span>
+                            <span class="text-xs font-black text-stone-400 tabular-nums">${item.ккал} ккал</span>
                             <span class="text-2xl">${item.icon}</span>
                         </div>
                     `;
@@ -381,7 +381,7 @@
         // КРОК 1: Завантаження Фундаменту
         function loadFoundation() {
             state.phase = 1;
-            state.totalKcal = FOUNDATION.kcal;
+            state.totalккал = FOUNDATION.ккал;
             state.p = FOUNDATION.p;
             state.f = FOUNDATION.f;
             state.c = FOUNDATION.c;
@@ -430,7 +430,7 @@
             if(state.phase === 0) return; // Захист
 
             state.choices.push({...item, uid: Math.random()});
-            state.totalKcal += item.kcal;
+            state.totalккал += item.ккал;
             state.p += item.p;
             state.f += item.f;
             state.c += item.c;
@@ -443,7 +443,7 @@
             el.title = "Клікніть, щоб прибрати";
             
             // Масштабування залежно від калорій (0.9 - 1.5)
-            const scale = 0.9 + (item.kcal / 600);
+            const scale = 0.9 + (item.ккал / 600);
             el.style.setProperty('--s', scale);
             
             // Рандомне розташування ближче до центру
@@ -454,7 +454,7 @@
             
             // Видалення по кліку
             el.onclick = function() {
-                state.totalKcal -= item.kcal;
+                state.totalккал -= item.ккал;
                 state.p -= item.p; state.f -= item.f; state.c -= item.c;
                 state.choices = state.choices.filter(c => c.uid !== item.uid);
                 this.remove();
@@ -469,8 +469,8 @@
             if(state.phase === 0) return; // Нічого не оновлюємо до старту
 
             // Калорії
-            document.getElementById('kcal-display').innerHTML = `${state.totalKcal} <span class="text-stone-500 text-lg uppercase font-bold">kcal</span>`;
-            document.getElementById('total-kcal-receipt').innerText = state.totalKcal;
+            document.getElementById('ккал-display').innerHTML = `${state.totalккал} <span class="text-stone-500 text-lg uppercase font-bold">ккал</span>`;
+            document.getElementById('total-ккал-receipt').innerText = state.totalккал;
 
             // БЖВ Бари (цільові значення для ліміту)
             const targetP = state.limit * 0.035; 
@@ -494,7 +494,7 @@
             
             let baseHTML = '';
             FOUNDATION.items.forEach(i => {
-                baseHTML += `<div class="flex justify-between border-b border-[#ddd] py-0.5"><span>${i.name}</span><span class="tabular-nums">${i.kcal}</span></div>`;
+                baseHTML += `<div class="flex justify-between border-b border-[#ddd] py-0.5"><span>${i.name}</span><span class="tabular-nums">${i.ккал}</span></div>`;
             });
             document.getElementById('receipt-base-items').innerHTML = baseHTML;
 
@@ -503,7 +503,7 @@
                 choiceHTML = `<div class="italic text-center py-4 opacity-50 text-[10px]">Ваш вибір порожній. Додайте страву!</div>`;
             } else {
                 state.choices.forEach(i => {
-                    choiceHTML += `<div class="flex justify-between py-0.5"><span>• ${i.name.toUpperCase()}</span><span class="tabular-nums">${i.kcal}</span></div>`;
+                    choiceHTML += `<div class="flex justify-between py-0.5"><span>• ${i.name.toUpperCase()}</span><span class="tabular-nums">${i.ккал}</span></div>`;
                 });
             }
             document.getElementById('receipt-choice-items').innerHTML = choiceHTML;
@@ -513,14 +513,14 @@
             let tagColor = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
             let verdict = "База завантажена. У вас є місце для улюблених страв або десертів. Обирайте з розумом!";
 
-            if (state.totalKcal > state.limit) {
+            if (state.totalккал > state.limit) {
                 status = "Перебір";
                 tagColor = "text-red-400 border-red-500/30 bg-red-500/10";
                 verdict = "Ой-вей! Ліміт перевищено. Зайві калорії з фаст-фуду чи десертів відкладуться про запас. Треба більше рухатись!";
             } else if (state.choices.length > 0) {
                 // Перевірка на співвідношення корисного до некорисного
-                const treatsKcal = state.choices.filter(c => c.cat === 'treat').reduce((sum, c) => sum + c.kcal, 0);
-                if (treatsKcal > (state.limit * 0.2)) {
+                const treatsккал = state.choices.filter(c => c.cat === 'treat').reduce((sum, c) => sum + c.ккал, 0);
+                if (treatsккал > (state.limit * 0.2)) {
                     status = "Увага: Цукор!";
                     tagColor = "text-amber-400 border-amber-500/30 bg-amber-500/10";
                     verdict = "Ви додали забагато смаколиків. Швидкі вуглеводи дадуть різкий стрибок енергії, а потім — втому на уроці.";
@@ -538,7 +538,7 @@
 
         function resetAll() {
             state.phase = 0;
-            state.totalKcal = 0;
+            state.totalккал = 0;
             state.p = 0; state.f = 0; state.c = 0;
             state.choices = [];
             
@@ -554,8 +554,8 @@
             document.getElementById('sector-p').classList.remove('active');
 
             // Скидання лічильників
-            document.getElementById('kcal-display').innerHTML = `0 <span class="text-stone-600 text-lg uppercase font-bold">kcal</span>`;
-            document.getElementById('total-kcal-receipt').innerText = 0;
+            document.getElementById('ккал-display').innerHTML = `0 <span class="text-stone-600 text-lg uppercase font-bold">ккал</span>`;
+            document.getElementById('total-ккал-receipt').innerText = 0;
             document.getElementById('p-bar').style.width = '0%';
             document.getElementById('f-bar').style.width = '0%';
             document.getElementById('c-bar').style.width = '0%';
